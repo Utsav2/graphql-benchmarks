@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "languages": {
+    "nodejs-npm": {
+      "specfileHash": "d3715a274a5c8a01d9b85a1310902470",
+      "lockfileHash": "08be662a6e151a1a89cbd54da5d2e3cb",
+      "guessedImports": [
+        "apollo-server",
+        "graphql-middleware",
+        "graphql-tools",
+        "chance"
+      ],
+      "guessedImportsHash": "cd423b7efd18e2ecda1d53a1a221ec2c"
+    }
+  }
+}
