@@ -1,31 +1,16 @@
-const { ApolloServer, gql } = require("apollo-server");
-const { ApolloServer: ApolloServerExpress } = require("apollo-server-express");
-const async_hooks = require("node:async_hooks");
-const express = require('express');
-const { applyMiddleware } = require("graphql-middleware");
-const { makeExecutableSchema } = require("graphql-tools");
-const { AsyncLocalStorage } = require("node:async_hooks");
-
-const Fastify = require("fastify");
-const mercurius = require("mercurius");
-
 const DataLoader = require("dataloader");
-
-var chance = require("chance").Chance();
+const chance = require("chance").Chance();
+const { makeExecutableSchema } = require("graphql-tools");
+const async_hooks = require("node:async_hooks");
 
 const hook = async_hooks.createHook({
   init: () => {},
   destroy: () => {},
 });
 
-const asyncLocalStorage = new AsyncLocalStorage();
+let userLimit = 2;
+let itemLimit = 10;
 
-const useMiddleware = process.env.USE_MIDDLEWARE === "1";
-const useExpress = process.env.USE_EXPRESS === "1";
-const useMercurius = process.env.USE_MERCURIUS === "1";
-const useAsyncLocalStorage = process.env.USE_ASYNC_LOCAL_STORAGE === "1";
-
-// The GraphQL schema
 const schema = `
   type Item {
     id: String
@@ -51,18 +36,10 @@ const schema = `
 
   type Mutation {
     setAsyncHooksEnabled(enabled: Boolean!): Boolean!
-    setAsyncLocalStorageEnabled(enabled: Boolean!): Boolean!
     setUserLimit(limit: Int!): Int!
     setItemLimit(limit: Int!): Int!
   }
 `;
-
-const typeDefs = gql`
-  ${schema}
-`;
-
-let userLimit = 2;
-let itemLimit = 10;
 
 const randomString = chance.string();
 
@@ -111,9 +88,6 @@ const resolvers = {
       }
       return args.enabled;
     },
-    setAsyncLocalStorageEnabled: (parent, args) => {
-      return false;
-    },
     setUserLimit: (parent, args) => {
       userLimit = args.limit;
       return userLimit;
@@ -125,40 +99,4 @@ const resolvers = {
   },
 };
 
-if (useExpress) {
-  const app = express();
-
-	if (useAsyncLocalStorage) {
-  app.use((req, res, next) => {
-    asyncLocalStorage.run({ ctx: "Ctx" }, () => {
-      next();
-    });
-  });
-	}
-
-  const server = new ApolloServerExpress({
-    typeDefs,
-    resolvers,
-  });
-
-  server.start().then(() => {
-    server.applyMiddleware({ app });
-
-    app.listen({ port: 4000 }, () =>
-      console.log(`Server ready at http://localhost:4000${server.graphqlPath}`),
-    );
-  });
-} else if (!useMercurius) {
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-  });
-
-  server.listen().then(({ url }) => {
-    console.log(`🚀 Server ready at ${url}`);
-  });
-} else {
-  const app = Fastify();
-  app.register(mercurius, { schema, resolvers });
-  app.listen({ port: 4000 });
-}
+module.exports = { schema, resolvers };
